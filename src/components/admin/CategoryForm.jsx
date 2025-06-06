@@ -1,31 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useCategories } from "../../hooks/api";
 
+// Animation variants for the form
 const formVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
-/**
- * Form for adding/editing categories
- * @param {Object} props
- * @param {Object} props.category - Category to edit (optional)
- * @param {Function} props.onCancel - Cancel edit callback (optional)
- */
 function CategoryForm({ category, onCancel }) {
+  // State for form fields
   const [form, setForm] = useState({
     id: category?.id || null,
     name: category?.name || "",
     description: category?.description || "",
   });
+  // State for list of categories
+  const [categories, setCategories] = useState([]);
+  // State for validation and fetch errors
   const [errors, setErrors] = useState({});
-  const { addCategory, updateCategory } = useCategories();
 
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/categories");
+        const data = await response.json();
+        setCategories(data);
+      } catch (err) {
+        setErrors({ fetch: "Failed to fetch categories" });
+        console.error(err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Handle input changes
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Validate form fields
   const validate = () => {
     const newErrors = {};
     if (!form.name) newErrors.name = "Name is required";
@@ -33,6 +47,7 @@ function CategoryForm({ category, onCancel }) {
     return newErrors;
   };
 
+  // Handle form submission for add/update
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
@@ -42,17 +57,39 @@ function CategoryForm({ category, onCancel }) {
     }
 
     try {
+      // Update category if id exists, else add new
       if (form.id) {
-        await updateCategory(form.id, {
-          name: form.name,
-          description: form.description,
-        });
+        const response = await fetch(
+          `http://localhost:5000/api/categories/${form.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: form.name,
+              description: form.description,
+            }),
+          }
+        );
+        if (!response.ok) throw new Error("Failed to update category");
       } else {
-        await addCategory({ name: form.name, description: form.description });
+        const response = await fetch("http://localhost:5000/api/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: form.name,
+            description: form.description,
+          }),
+        });
+        if (!response.ok) throw new Error("Failed to add category");
       }
+      // Reset form and errors
       setForm({ id: null, name: "", description: "" });
       setErrors({});
       if (onCancel) onCancel();
+      // Refresh categories list
+      const response = await fetch("http://localhost:5000/api/categories");
+      const data = await response.json();
+      setCategories(data);
     } catch (err) {
       setErrors({ submit: err.message });
     }
@@ -65,8 +102,14 @@ function CategoryForm({ category, onCancel }) {
       initial="hidden"
       animate="visible"
     >
+      {/* Form Title */}
+      <h2 className="text-xl font-bold text-admin_text mb-4">
+        Manage Categories
+      </h2>
+      {/* Category Add/Edit Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Name Field */}
           <div>
             <label className="block text-admin_textSecondary text-sm mb-1">
               Name
@@ -85,6 +128,7 @@ function CategoryForm({ category, onCancel }) {
               <p className="text-admin_danger text-sm mt-1">{errors.name}</p>
             )}
           </div>
+          {/* Description Field */}
           <div>
             <label className="block text-admin_textSecondary text-sm mb-1">
               Description
@@ -108,9 +152,11 @@ function CategoryForm({ category, onCancel }) {
             )}
           </div>
         </div>
+        {/* Submission Error */}
         {errors.submit && (
           <p className="text-admin_danger text-sm">{errors.submit}</p>
         )}
+        {/* Form Buttons */}
         <div className="flex space-x-2">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -119,6 +165,7 @@ function CategoryForm({ category, onCancel }) {
           >
             {form.id ? "Update" : "Add"} Category
           </motion.button>
+          {/* Cancel Button for Edit Mode */}
           {form.id && (
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -131,6 +178,52 @@ function CategoryForm({ category, onCancel }) {
           )}
         </div>
       </form>
+
+      {/* Category List Table */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-admin_text mb-4">
+          Category List
+        </h3>
+        <div className="bg-admin_card rounded-lg shadow-md w-full overflow-hidden">
+          <div className="relative w-full overflow-x-auto">
+            <table className="w-full min-w-[600px] table-auto">
+              <thead className="bg-admin_secondary">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm text-admin_textSecondary">
+                    ID
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm text-admin_textSecondary">
+                    Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm text-admin_textSecondary">
+                    Description
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Render all categories */}
+                {categories.map((cat) => (
+                  <motion.tr
+                    key={cat.id}
+                    variants={formVariants}
+                    className="border-t border-admin_secondary"
+                  >
+                    <td className="px-4 py-3 text-sm text-admin_text">
+                      {cat.id}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-admin_text">
+                      {cat.name}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-admin_text">
+                      {cat.description}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }
