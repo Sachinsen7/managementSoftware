@@ -1,20 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useProducts } from "../../hooks/api";
 
 const formVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
-/**
- * Form for adding/editing products
- * @param {Object} props
- * @param {Object} props.product - Product to edit (optional)
- * @param {Array} props.categories - List of categories for dropdown
- * @param {Function} props.onCancel - Cancel edit callback (optional)
- */
-function ProductForm({ product, categories, onCancel }) {
+function ProductForm({ product, onCancel }) {
   const [form, setForm] = useState({
     id: product?.id || null,
     name: product?.name || "",
@@ -23,8 +15,29 @@ function ProductForm({ product, categories, onCancel }) {
     image: product?.image || "",
     categoryId: product?.categoryId || "",
   });
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
   const [errors, setErrors] = useState({});
-  const { addProduct, updateProduct } = useProducts();
+
+  useEffect(() => {
+    // Fetch categories and products
+    const fetchData = async () => {
+      try {
+        const [categoriesResponse, productsResponse] = await Promise.all([
+          fetch("http://localhost:5000/api/categories"),
+          fetch("http://localhost:5000/api/products"),
+        ]);
+        const categoriesData = await categoriesResponse.json();
+        const productsData = await productsResponse.json();
+        setCategories(categoriesData);
+        setProducts(productsData);
+      } catch (err) {
+        setErrors({ fetch: "Failed to fetch data" });
+        console.error(err);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -59,9 +72,22 @@ function ProductForm({ product, categories, onCancel }) {
         categoryId: parseInt(form.categoryId),
       };
       if (form.id) {
-        await updateProduct(form.id, productData);
+        const response = await fetch(
+          `http://localhost:5000/api/products/${form.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(productData),
+          }
+        );
+        if (!response.ok) throw new Error("Failed to update product");
       } else {
-        await addProduct(productData);
+        const response = await fetch("http://localhost:5000/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(productData),
+        });
+        if (!response.ok) throw new Error("Failed to add product");
       }
       setForm({
         id: null,
@@ -73,6 +99,10 @@ function ProductForm({ product, categories, onCancel }) {
       });
       setErrors({});
       if (onCancel) onCancel();
+      // Refresh products
+      const response = await fetch("http://localhost:5000/api/products");
+      const data = await response.json();
+      setProducts(data);
     } catch (err) {
       setErrors({ submit: err.message });
     }
@@ -85,6 +115,9 @@ function ProductForm({ product, categories, onCancel }) {
       initial="hidden"
       animate="visible"
     >
+      <h2 className="text-xl font-bold text-admin_text mb-4">
+        Manage Products
+      </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -211,6 +244,64 @@ function ProductForm({ product, categories, onCancel }) {
           )}
         </div>
       </form>
+
+      {/* Product List */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold text-admin_text mb-4">
+          Product List
+        </h3>
+        <div className="bg-admin_card rounded-lg shadow-md w-full overflow-hidden">
+          <div className="relative w-full overflow-x-auto">
+            <table className="w-full min-w-[800px] table-auto">
+              <thead className="bg-admin_secondary">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm text-admin_textSecondary">
+                    ID
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm text-admin_textSecondary">
+                    Name
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm text-admin_textSecondary">
+                    Price
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm text-admin_textSecondary">
+                    Stock
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm text-admin_textSecondary">
+                    Category
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((prod) => (
+                  <motion.tr
+                    key={prod.id}
+                    variants={formVariants}
+                    className="border-t border-admin_secondary"
+                  >
+                    <td className="px-4 py-3 text-sm text-admin_text">
+                      {prod.id}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-admin_text">
+                      {prod.name}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-admin_text">
+                      ₹{prod.price}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-admin_text">
+                      {prod.stock}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-admin_text">
+                      {categories.find((cat) => cat.id === prod.categoryId)
+                        ?.name || "N/A"}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 }
