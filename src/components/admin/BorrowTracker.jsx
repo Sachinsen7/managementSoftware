@@ -1,4 +1,3 @@
-// frontend/src/pages/admin/BorrowSection.jsx
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -39,52 +38,77 @@ function BorrowTracker() {
 
   return (
     <motion.div
-      className="space-y-6"
+      className="space-y-6 p-4 sm:p-6 w-full max-w-full"
       variants={tableVariants}
       initial="hidden"
       animate="visible"
     >
-      <h2 className="text-2xl font-bold text-admin_text">Borrow Requests</h2>
-      <div className="bg-admin_card rounded-lg shadow-md overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-admin_secondary">
-            <tr>
-              <th className="p-4 text-left text-admin_textSecondary">ID</th>
-              <th className="p-4 text-left text-admin_textSecondary">User</th>
-              <th className="p-4 text-left text-admin_textSecondary">Item</th>
-              <th className="p-4 text-left text-admin_textSecondary">Status</th>
-              <th className="p-4 text-left text-admin_textSecondary">Date</th>
-              <th className="p-4 text-left text-admin_textSecondary">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.map((req) => (
-              <motion.tr
-                key={req.id}
-                variants={tableVariants}
-                className="border-t border-admin_secondary"
-              >
-                <td className="p-4 text-admin_text">{req.id}</td>
-                <td className="p-4 text-admin_text">{req.user}</td>
-                <td className="p-4 text-admin_text">{req.item}</td>
-                <td className="p-4 text-admin_text">{req.status}</td>
-                <td className="p-4 text-admin_text">{req.date}</td>
-                <td className="p-4">
-                  <select
-                    onChange={(e) => updateStatus(req.id, e.target.value)}
-                    className="border border-admin_secondary rounded p-1 text-admin_text"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Denied">Denied</option>
-                  </select>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+      <h2 className="text-xl sm:text-2xl font-bold text-admin_text">
+        Borrow Requests
+      </h2>
+      <div className="bg-admin_card rounded-lg shadow-md w-full overflow-hidden">
+        <div className="relative w-full overflow-x-auto">
+          <table className="w-full min-w-[800px] table-auto">
+            <thead className="bg-admin_secondary">
+              <tr>
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm text-admin_textSecondary truncate min-w-[80px]">
+                  ID
+                </th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm text-admin_textSecondary truncate min-w-[120px]">
+                  User
+                </th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm text-admin_textSecondary truncate min-w-[120px]">
+                  Item
+                </th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm text-admin_textSecondary truncate min-w-[100px]">
+                  Status
+                </th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm text-admin_textSecondary truncate min-w-[100px]">
+                  Date
+                </th>
+                <th className="px-2 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm text-admin_textSecondary truncate min-w-[120px]">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map((req) => (
+                <motion.tr
+                  key={req.id}
+                  variants={tableVariants}
+                  className="border-t border-admin_secondary"
+                >
+                  <td className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-admin_text truncate min-w-[80px]">
+                    {req.id}
+                  </td>
+                  <td className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-admin_text truncate min-w-[120px]">
+                    {req.user}
+                  </td>
+                  <td className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-admin_text truncate min-w-[120px]">
+                    {req.item}
+                  </td>
+                  <td className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-admin_text truncate min-w-[100px]">
+                    {req.status}
+                  </td>
+                  <td className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-admin_text truncate min-w-[100px]">
+                    {req.date}
+                  </td>
+                  <td className="px-2 py-2 sm:px-4 sm:py-3 min-w-[120px]">
+                    <select
+                      value={req.status}
+                      onChange={(e) => updateStatus(req.id, e.target.value)}
+                      className="w-full sm:w-auto border border-admin_secondary rounded p-1 text-xs sm:text-sm text-admin_text bg-admin_card focus:outline-none focus:ring-2 focus:ring-admin_primary"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Denied">Denied</option>
+                    </select>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </motion.div>
   );
